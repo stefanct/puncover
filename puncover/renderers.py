@@ -7,8 +7,10 @@ except ImportError:
 
 from datetime import datetime
 import itertools
-import re
+import os
 import pathlib
+import re
+import signal
 
 import jinja2
 import markupsafe
@@ -372,6 +374,10 @@ def register_jinja_filters(jinja_env):
     jinja_env.filters["sorted"] = sorted_filter
 
 
+def shutdown():
+    # For whatever reason, if python is *launched* in the background, signaling INT internally does not work.
+    os.kill(os.getpid(), signal.SIGKILL)
+    return "OK", 200
 
 def register_urls(app, collector):
     app.add_url_rule("/", view_func=OverviewRenderer.as_view("overview", collector=collector))
@@ -379,3 +385,4 @@ def register_urls(app, collector):
     app.add_url_rule("/path/<path:path>/", view_func=PathRenderer.as_view("path", collector=collector))
     app.add_url_rule("/symbol/<string:symbol_name>", view_func=SymbolRenderer.as_view("symbol", collector=collector))
     app.add_url_rule("/rack/", view_func=RackRenderer.as_view("rack", collector=collector), methods=["GET", "POST"])
+    app.add_url_rule("/shutdown", view_func=shutdown)
